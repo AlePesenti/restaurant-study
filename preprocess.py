@@ -18,3 +18,21 @@ def load_and_preprocess_data(file_path):
 
 
 ### Grouped Split
+import numpy as np
+from sklearn.model_selection import StratifiedGroupKFold
+
+def grouped_split(utterances, dialog_acts): 
+    X = np.array(utterances)
+    y = np.array(dialog_acts)
+    groups = np.array(utterances)
+    sgkf = StratifiedGroupKFold(n_splits=7, shuffle=True , random_state=42)
+    sgkf.get_n_splits()
+
+    train_index, test_index = next(sgkf.split(X, y, groups))
+
+    trainX = X[train_index]
+    trainY = y[train_index]
+    testX  = X[test_index]
+    testY  = y[test_index]
+
+    return(trainX, testX, trainY, testY)

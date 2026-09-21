@@ -15,9 +15,9 @@ dialog_acts, utterances = load_and_preprocess_data(DATA_PATH)
 X_train, X_test, y_train, y_test = train_test_split(utterances, dialog_acts, test_size=0.15, stratify=dialog_acts, random_state=RANDOM_SEED)
 
 # 2. Grouped split
+from preprocess import grouped_split
 
-### Call function from preprocess file
-# X_train_grouped, X_test_grouped, y_train_grouped, y_test_grouped =
+X_train_grouped, X_test_grouped, y_train_grouped, y_test_grouped = grouped_split(utterances, dialog_acts)
 
 
 
