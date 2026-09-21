@@ -4,7 +4,6 @@ We encode solely the unique utterances (4,823 out of 23,998 rows) since it's che
 we run it once to produce embeddings.npz"""
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 DATA_FILE = "Data/dailog_acts.dat"
 CACHE_FILE = "Data/embeddings.npz"
@@ -26,6 +25,7 @@ def load_and_preprocess_data(file_path):
     return(dialog_acts, utterances)
 
 def encode_unique_utterances(utterances):
+    from sentence_transformers import SentenceTransformer
     """Encode distinct utterance and return a sentence-vector dictionary"""
     model = SentenceTransformer(MODEL_NAME)
     model.eval() #freeze
