@@ -38,3 +38,29 @@ def rule_based_classifier(X_test):
         predicted_y.append(prediction)
     
     return(predicted_y)
+
+
+# 1. Logistic regression
+from sklearn.linear_model import LogisticRegression
+
+def log_reg(X_train, y_train, X_test):
+
+    log_reg_classifier = LogisticRegression(max_iter=1000)
+    log_reg_classifier.fit(X_train, y_train)
+
+    log_reg_predictions = log_reg_classifier.predict(X_test)
+
+    return(log_reg_predictions)
+
+
+# 2. SVM
+from sklearn.svm import LinearSVC
+
+def svm(X_train, y_train, X_test):
+
+    svm_classifier = LinearSVC(max_iter=5000, random_state=42)
+    svm_classifier.fit(X_train, y_train)
+
+    svm_predictions = svm_classifier.predict(X_test)
+
+    return(svm_predictions)
