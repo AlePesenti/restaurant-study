@@ -8,3 +8,4 @@ def evaluate(y_test, y_pred):
     
     print("Accuracy:", accuracy)
     print("Balanced accuracy", balanced_accuracy)
+    print("")
