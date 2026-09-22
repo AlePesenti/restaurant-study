@@ -91,14 +91,30 @@ svm_grouped_predictions_emb = svm(X_train_grouped_emb, y_train_grouped, X_test_g
 print("Rule-based baseline")
 evaluate(y_test, rule_based_predictions)
 
+
 print("BoW + logistic regression")
 evaluate(y_test, log_reg_predictions)
+
+print("BoW + logistic regression - Grouped")
+evaluate(y_test_grouped, log_reg_grouped_predictions)
+
 
 print("BoW + SVM")
 evaluate(y_test, svm_predictions)
 
+print("BoW + SVM - Grouped")
+evaluate(y_test_grouped, svm_grouped_predictions)
+
+
 print("Embeddings + logistic regression")
 evaluate(y_test, log_reg_predictions_emb)
 
+print("Embeddings + logistic regression - Grouped")
+evaluate(y_test_grouped, log_reg_grouped_predictions_emb)
+
+
 print("Embeddings + SVM")
 evaluate(y_test, svm_predictions_emb)
+
+print("Embeddings + SVM - Grouped")
+evaluate(y_test_grouped, svm_grouped_predictions_emb)
