@@ -1,8 +1,3 @@
-""" Encoding utterances into frozen DistilBERT sentence embedding
-Since the encoder doesn't learn from data we can safely encode the dataset before any spilt (train/data)
-We encode solely the unique utterances (4,823 out of 23,998 rows) since it's cheaper and it would give idential vectors for repeated sentences
-we run it once to produce embeddings.npz"""
-
 import numpy as np
 
 DATA_FILE = "Data/dailog_acts.dat"
@@ -10,19 +5,7 @@ CACHE_FILE = "Data/embeddings.npz"
 MODEL_NAME = "distilbert-base-uncased"
 
 
-def load_and_preprocess_data(file_path):
-
-    dialog_acts = []
-    utterances = []
-
-    with open(file_path, encoding="utf-8") as data_raw:
-        for line in data_raw:
-            line = line.strip().lower()
-            dialog_act, utterance = line.split(" ", 1)
-            dialog_acts.append(dialog_act)
-            utterances.append(utterance)
-
-    return(dialog_acts, utterances)
+from preprocess import load_and_preprocess_data
 
 def encode_unique_utterances(utterances):
     from sentence_transformers import SentenceTransformer
