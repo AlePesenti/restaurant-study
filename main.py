@@ -6,7 +6,7 @@ from evaluation import evaluate
 
 
 RANDOM_SEED = 42
-DATA_PATH = "data/dailog_acts.dat"
+DATA_PATH = "Data/dailog_acts.dat"
 
 dialog_acts, utterances = load_and_preprocess_data(DATA_PATH)
 
@@ -85,8 +85,6 @@ svm_grouped_predictions_emb = svm(X_train_grouped_emb, y_train_grouped, X_test_g
 
 
 ##### EVALUATION
-
-# Grouped ook nog toevoegen
 
 print("Rule-based baseline")
 evaluate(y_test, rule_based_predictions)
