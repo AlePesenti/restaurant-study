@@ -1,8 +1,8 @@
 from sklearn.model_selection import train_test_split
 
 from preprocess import load_and_preprocess_data
-from evaluation import evaluate
 from classifiers import rule_based_classifier
+from evaluation import evaluate
 
 
 RANDOM_SEED = 42
@@ -118,3 +118,4 @@ evaluate(y_test, svm_predictions_emb)
 
 print("Embeddings + SVM - Grouped")
 evaluate(y_test_grouped, svm_grouped_predictions_emb)
+
