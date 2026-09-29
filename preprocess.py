@@ -21,6 +21,7 @@ def load_and_preprocess_data(file_path):
 import numpy as np
 from sklearn.model_selection import StratifiedGroupKFold
 
+
 def grouped_split(utterances, dialog_acts): 
     X = np.array(utterances)
     y = np.array(dialog_acts)
@@ -29,6 +30,10 @@ def grouped_split(utterances, dialog_acts):
     sgkf.get_n_splits()
 
     train_index, test_index = next(sgkf.split(X, y, groups))
+
+    # TODO: choose the one closest to 15% and mention in the report
+
+
 
     trainX = X[train_index]
     trainY = y[train_index]
