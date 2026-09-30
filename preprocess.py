@@ -29,12 +29,26 @@ def grouped_split(utterances, dialog_acts):
     sgkf = StratifiedGroupKFold(n_splits=7, shuffle=True , random_state=42)
     sgkf.get_n_splits()
 
-    train_index, test_index = next(sgkf.split(X, y, groups))
-
-    # TODO: choose the one closest to 15% and mention in the report
 
 
+    # choose the split that is closest to 15% 
 
+    best_split = None
+    best_difference = float("inf")
+
+    for train_index, test_index in sgkf.split(X, y, groups):
+        split = len(test_index) / len(X)
+
+        difference = abs(split - 0.15)
+
+        if difference < best_difference:
+            best_difference = difference
+            best_split = (train_index, test_index)
+
+    train_index, test_index = best_split
+
+    print(best_difference)
+    
     trainX = X[train_index]
     trainY = y[train_index]
     testX  = X[test_index]
