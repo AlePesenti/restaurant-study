@@ -1,3 +1,5 @@
+import os
+import joblib
 from sklearn.model_selection import train_test_split
 
 from preprocess import load_and_preprocess_data
@@ -45,18 +47,18 @@ X_test_grouped_bow  = vectorizer_grouped.transform(X_test_grouped)
 # 1. Logistic regression
 from classifiers import log_reg
 
-log_reg_predictions = log_reg(X_train_bow, y_train, X_test_bow)
+log_reg_model, log_reg_predictions = log_reg(X_train_bow, y_train, X_test_bow)
 
-log_reg_grouped_predictions = log_reg(X_train_grouped_bow, y_train_grouped, X_test_grouped_bow)
+_, log_reg_grouped_predictions = log_reg(X_train_grouped_bow, y_train_grouped, X_test_grouped_bow)
 
 
 
 # 2. SVM
 from classifiers import svm
 
-svm_predictions = svm(X_train_bow, y_train, X_test_bow)
+svm_model, svm_predictions = svm(X_train_bow, y_train, X_test_bow)
 
-svm_grouped_predictions = svm(X_train_grouped_bow, y_train_grouped, X_test_grouped_bow)
+_, svm_grouped_predictions = svm(X_train_grouped_bow, y_train_grouped, X_test_grouped_bow)
 
 
 ### 3. Train the same two ML classifiers on top of frozen pretrained embeddings.
@@ -73,16 +75,27 @@ X_test_grouped_emb = np.array([cache[u] for u in X_test_grouped])
 
 # 1. Logistic regression
 
-log_reg_predictions_emb = log_reg(X_train_emb, y_train, X_test_emb)
+log_reg_emb_model, log_reg_predictions_emb = log_reg(X_train_emb, y_train, X_test_emb)
 
-log_reg_grouped_predictions_emb = log_reg(X_train_grouped_emb, y_train_grouped, X_test_grouped_emb)
+_, log_reg_grouped_predictions_emb = log_reg(X_train_grouped_emb, y_train_grouped, X_test_grouped_emb)
 
 
 # 2. SVM
 
-svm_predictions_emb = svm(X_train_emb, y_train, X_test_emb)
+svm_emb_model, svm_predictions_emb = svm(X_train_emb, y_train, X_test_emb)
 
-svm_grouped_predictions_emb = svm(X_train_grouped_emb, y_train_grouped, X_test_grouped_emb)
+_, svm_grouped_predictions_emb = svm(X_train_grouped_emb, y_train_grouped, X_test_grouped_emb)
+
+##### SAVE MODELS
+#Saved to prevent retraining each time, the grouped ones exist only to measure the effect of data leackage
+
+os.makedirs("models", exist_ok=True)
+
+joblib.dump({"vectorizer": vectorizer, "log_reg": log_reg_model, "svm": svm_model},
+            "models/bow_models.joblib")
+
+joblib.dump({"log_reg": log_reg_emb_model, "svm": svm_emb_model},
+            "models/embedding_models.joblib")
 
 
 ##### EVALUATION
