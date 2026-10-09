@@ -1,0 +1,7 @@
+scikit-learn==1.9.1
+numpy==2.4.6
+sentence-transformers==6.1.0
+pandas
+Levenshtein
+pyttsx3
+notebook
