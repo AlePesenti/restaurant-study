@@ -50,7 +50,7 @@ def log_reg(X_train, y_train, X_test):
 
     log_reg_predictions = log_reg_classifier.predict(X_test)
 
-    return(log_reg_predictions, log_reg_classifier.predict(X_test))
+    return(log_reg_classifier, log_reg_predictions)
 
 
 # 2. SVM
@@ -63,4 +63,4 @@ def svm(X_train, y_train, X_test):
 
     svm_predictions = svm_classifier.predict(X_test)
 
-    return(svm_predictions, svm_classifier.predict(X_test))
+    return(svm_classifier, svm_predictions)

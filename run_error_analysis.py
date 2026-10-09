@@ -11,7 +11,7 @@ from error_analysis import (
 
 
 RANDOM_SEED = 42
-DATA_PATH = "data/dailog_acts.dat"
+DATA_PATH = "Data/dailog_acts.dat"
 
 
 dialog_acts, utterances = load_and_preprocess_data(DATA_PATH)
