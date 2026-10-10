@@ -33,9 +33,20 @@ import pyttsx3
 
 speech = pyttsx3.init() 
 
-speech.setProperty("rate", 150)
-voices = speech.getProperty('voices') 
-speech.setProperty("voice", voices[1].id)
+def speak(text):
+    """
+    pyttsx3.init() reuses the engine it created before, and the Windows SAPI5
+    driver stops producing sound after the first runAndWait(). Clearing the
+    engine cache forces a genuinely new engine for every utterance.
+    """
+    pyttsx3._activeEngines.clear()
+
+    engine = pyttsx3.init()
+    engine.setProperty("rate", 150)
+    voices = engine.getProperty("voices")
+    engine.setProperty("voice", voices[1].id)
+    engine.say(text)
+    engine.runAndWait()
 ######################################
 
 
@@ -69,8 +80,7 @@ def run_dialog(debug=False, TTS=False, fallback="levenshtein"):
     
     ### Text to speech
     if TTS:
-        speech.say("Hello, welcome to the Cambridge restaurant recommendation system. How may I help you?")
-        speech.runAndWait()
+        speak("Hello, welcome to the Cambridge restaurant recommendation system. How may I help you?")
     
     while dialog_state["state"] != 11:
 
@@ -106,8 +116,7 @@ def run_dialog(debug=False, TTS=False, fallback="levenshtein"):
         
         ### Text to speech
         if TTS:
-            speech.say(response)
-            speech.runAndWait()
+            speak(response)
 
     return dialog_state
 
