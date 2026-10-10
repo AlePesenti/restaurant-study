@@ -47,7 +47,6 @@ def grouped_split(utterances, dialog_acts):
 
     train_index, test_index = best_split
 
-    print(best_difference)
     
     trainX = X[train_index]
     trainY = y[train_index]
