@@ -4,4 +4,4 @@ sentence-transformers==6.1.0
 pandas
 Levenshtein
 pyttsx3
-notebook
+
