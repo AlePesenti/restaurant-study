@@ -82,7 +82,7 @@ def run_dialog(debug=False, TTS=False, fallback="levenshtein"):
     if TTS:
         speak("Hello, welcome to the Cambridge restaurant recommendation system. How may I help you?")
     
-    while dialog_state["state"] != 11:
+    while dialog_state["state"] < 11:
 
         utterance = input("User: ").strip().lower()
 

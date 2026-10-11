@@ -168,7 +168,7 @@ def state_transition(dialog_state, utterance, dialog_act, fallback="levenshtein"
                     next_dialog_state = 8
                     system_utterance = response_generation("recommendrestaurant2", restaurant=recommendation, consequent=dialog_state["consequent"], contradiction=contra)
                 else:
-                    next_dialog_state = 7
+                    next_dialog_state = 12
                     system_utterance = response_generation("nomatch2",consequent=dialog_state["consequent"])
     
             else:
