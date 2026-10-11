@@ -38,7 +38,7 @@ X_test_bow = vectorizer.transform(X_test)
 
 # Train SVM
 
-svm_predictions = svm(
+_, svm_predictions = svm(
     X_train_bow,
     y_train,
     X_test_bow
