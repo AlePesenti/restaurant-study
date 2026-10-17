@@ -28,7 +28,8 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from state_machine import create_dialog_state, state_transition
+from state_machine import create_dialog_state
+from webapp import dialog as web_dialog
 from webapp.tts import SpeechSynthesizer
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -254,13 +255,13 @@ def message(request: MessageRequest):
     utterance = request.text.strip().lower()[:500]
     dialog_act = classify_utterance(utterance)
     state_before = dialog["state"]["state"]
-    dialog["state"], response = state_transition(dialog["state"], utterance, dialog_act)
+    dialog["state"], response, act_used = web_dialog.transition(dialog["state"], utterance, dialog_act)
     dialog["turns"] += 1
 
     restaurant = dialog["state"]["restaurant"]
     log_event("turn", participant_id=participant_id, position=request.position, code=code,
               label=CONDITIONS[code]["label"], turn=dialog["turns"], state_before=state_before,
-              user_utterance=utterance, dialog_act=dialog_act, state_after=dialog["state"]["state"],
+              user_utterance=utterance, dialog_act=dialog_act, act_used=act_used, state_after=dialog["state"]["state"],
               system_response=response, area=dialog["state"]["area"], food=dialog["state"]["food"],
               pricerange=dialog["state"]["pricerange"],
               recommendation=restaurant["restaurantname"] if restaurant else None)

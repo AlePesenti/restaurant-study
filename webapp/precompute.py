@@ -33,7 +33,7 @@ GREETING = "Hello, welcome to the Cambridge restaurant recommendation system. Ho
 
 
 def all_sentences():
-    sentences = {GREETING, *responses.values()}
+    sentences = {GREETING, *responses.values(), response_generation("askadditionalrequirements")}
 
     for value in [*areas, *foods, *price_ranges, "dontcare"]:
         sentences.add(response_generation("askconfirmation", suggested_value=value))

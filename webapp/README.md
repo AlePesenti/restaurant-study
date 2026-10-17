@@ -27,6 +27,16 @@ same audio, whatever their device. Both engines are free and open source and run
 Participants only ever see "Assistant 1-4" and the four-letter codes, never the condition
 names. The code-to-voice mapping is in `study_config.json`.
 
+## Dialog fixes: `webapp/dialog.py`
+
+The web app wraps the submitted Part 1b system with a few fixes found in the pilot
+conversations, without changing `state_machine.py` or `slot_extraction.py` (the terminal
+version behaves exactly as submitted): whole-word keyword matching ("inexpensive" is no
+longer "expensive"), common synonyms ("central", "northern", "affordable", ...), preference
+extraction even when the dialog act is misclassified, and no more loops after a
+recommendation ("no" gives an alternative). Every answer is still one of the system's own
+sentences. Each logged turn has both the predicted `dialog_act` and the `act_used`.
+
 ## Run locally
 
 From the repository root:
