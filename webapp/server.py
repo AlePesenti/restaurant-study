@@ -17,6 +17,7 @@ import os
 import random
 import threading
 import uuid
+from collections import Counter
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -66,27 +67,6 @@ def classify_utterance(utterance):
     return dialog_classifier.predict(dialog_vectorizer.transform([utterance]))[0]
 
 
-### Counterbalancing ###
-# All 24 orders are dealt from a shuffled deck, so every order is used once before
-# any order repeats. Consecutive participants still get unpredictable orders.
-
-class OrderDeck:
-    def __init__(self, codes):
-        self.codes = codes
-        self.deck = []
-        self.lock = threading.Lock()
-
-    def next(self):
-        with self.lock:
-            if not self.deck:
-                self.deck = [list(order) for order in itertools.permutations(self.codes)]
-                random.shuffle(self.deck)
-            return self.deck.pop()
-
-
-order_deck = OrderDeck(CODES)
-
-
 ### Session tokens ###
 
 def make_token(participant_id, order):
@@ -133,6 +113,60 @@ def log_event(event, **fields):
     with log_lock:
         with open(LOG_FILE, "a", encoding="utf-8") as log:
             log.write(json.dumps(record) + "\n")
+
+
+### Counterbalancing ###
+# Each new participant gets, at random, one of the 24 orders that has been used least so
+# far. The counts include every session already in the logs (local files and the log
+# dataset), so the balance survives server restarts. SystemRandom draws from the
+# operating system's entropy, so orders are never repeated in a predictable pattern.
+
+def order_history():
+    """How often each order was assigned, from the session_start events in the logs."""
+    files = list(LOG_DIR.glob("*.jsonl"))
+
+    if os.environ.get("LOG_DATASET") and os.environ.get("HF_TOKEN"):
+        try:
+            from huggingface_hub import snapshot_download
+            remote = snapshot_download(os.environ["LOG_DATASET"], repo_type="dataset",
+                                       allow_patterns="logs/*.jsonl", token=os.environ["HF_TOKEN"])
+            files += list(Path(remote).glob("logs/*.jsonl"))
+        except Exception as error:   # e.g. the dataset does not exist yet
+            print(f"could not read previous logs: {error}")
+
+    counts = Counter()
+    seen = set()
+    for path in files:
+        if path.name in seen:
+            continue
+        seen.add(path.name)
+        for line in path.read_text(encoding="utf-8").splitlines():
+            try:
+                record = json.loads(line)
+            except ValueError:
+                continue
+            if record.get("event") == "session_start" and sorted(record.get("order", [])) == sorted(CODES):
+                counts[tuple(record["order"])] += 1
+    return counts
+
+
+class OrderBalancer:
+    def __init__(self, codes, history):
+        self.orders = [tuple(order) for order in itertools.permutations(codes)]
+        self.counts = Counter({order: history.get(order, 0) for order in self.orders})
+        self.random = random.SystemRandom()
+        self.lock = threading.Lock()
+
+    def next(self):
+        with self.lock:
+            fewest = min(self.counts.values())
+            order = self.random.choice([order for order in self.orders if self.counts[order] == fewest])
+            self.counts[order] += 1
+            return list(order)
+
+
+order_balancer = OrderBalancer(CODES, order_history())
+print(f"order balancing: {sum(order_balancer.counts.values())} previous sessions found")
 
 
 ### Speech ###
@@ -216,7 +250,7 @@ def config():
 @app.post("/api/session")
 def new_session():
     participant_id = uuid.uuid4().hex[:8].upper()
-    order = order_deck.next()
+    order = order_balancer.next()
     log_event("session_start", participant_id=participant_id, order=order,
               order_labels=[CONDITIONS[code]["label"] for code in order])
     return {"token": make_token(participant_id, order), "participant_id": participant_id}

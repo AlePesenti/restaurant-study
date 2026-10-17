@@ -339,6 +339,12 @@ $("final-form-button").onclick = () => {
     el.textContent = words[config.conditions] || String(config.conditions);
   }
 
+  // Opening the page with ?new forgets the stored session (to test as a new participant).
+  if (new URLSearchParams(location.search).has("new")) {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    history.replaceState(null, "", location.pathname);
+  }
+
   progress = load();
   if (!progress) return show("intro-screen");
 
