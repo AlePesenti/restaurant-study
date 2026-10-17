@@ -1,0 +1,9 @@
+# What the hosted server needs: the dialog system and the pre-rendered audio, no TTS engines.
+fastapi==0.143.3
+uvicorn==0.54.0
+huggingface_hub==2.2.0
+joblib
+scikit-learn==1.9.1
+numpy==2.4.6
+pandas==3.0.6
+Levenshtein==0.27.5

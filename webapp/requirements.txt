@@ -1,0 +1,6 @@
+# Everything, including the TTS engines needed by webapp/precompute.py.
+# Install torch first from the CPU-only index:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+-r requirements-server.txt
+kokoro==0.9.4
+soundfile

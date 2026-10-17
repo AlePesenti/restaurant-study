@@ -1,0 +1,21 @@
+{
+  "conditions": {
+    "WDTP": {"label": "robotic-male",   "engine": "espeak", "voice": "en+m3",     "rate": 150},
+    "CDUK": {"label": "robotic-female", "engine": "espeak", "voice": "en+f3",     "rate": 150},
+    "DTFL": {"label": "human-male",     "engine": "kokoro", "voice": "bm_george", "speed": 1.0},
+    "9TEF": {"label": "human-female",   "engine": "kokoro", "voice": "bf_emma",   "speed": 1.0}
+  },
+
+  "form_url": "https://docs.google.com/forms/d/e/1FAIpQLScaR9Yx3c3-TouRaLEwPT_0eUL_dHq9N1zeQu7hmUrSNmyTQg/viewform?usp=pp_url&entry.1689090729={participant_id}&entry.650599314={code}",
+  "final_form_url": "",
+
+  "show_text": true,
+  "min_turns_before_done": 3,
+
+  "tasks": [
+    "You would like cheap Spanish food in the centre of town. Find a restaurant and ask for its phone number.",
+    "You would like a moderately priced Indian restaurant in the north. Find one and ask for its address.",
+    "You would like expensive Thai food in the centre. Find a restaurant and ask for its postcode.",
+    "You would like cheap Chinese food in the south of town. Find a restaurant and ask for its phone number."
+  ]
+}

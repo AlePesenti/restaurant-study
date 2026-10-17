@@ -133,7 +133,6 @@ def levenshtein_slot_extractor(utterance, threshold=1):  # Maybe the threshold i
 ### 3. Semantic similarity via embeddings
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 from embeddings import load_cache
 
@@ -148,16 +147,38 @@ GENERIC_WORDS = {"restaurant", "restaurants", "place", "food", "town", "area",
 
 MINIMUM_WORD_LENGTH = 3
 
-semantic_model = SentenceTransformer(SEMANTIC_MODEL)
-semantic_model.eval()   # frozen:used only as a fixed feature extractor
+ontology = {"area": areas, "food": foods, "pricerange": price_ranges}
 
-#DistilBERT similarities are nearly uniform. Whitening fixes this issue (We need to adress it in the report). 
-cached_vectors = np.array(list(load_cache("Data/embeddings.npz").values()),
-                          dtype=np.float64)
-embedding_mean = cached_vectors.mean(axis=0, keepdims=True)
-covariance = np.cov(cached_vectors.T)
-components, variances, _ = np.linalg.svd(covariance)
-whitening_matrix = components @ np.diag(1.0 / np.sqrt(variances + 1e-8))
+# The DistilBERT model is loaded on first use only, so the Levenshtein fallback
+# (and the web app) do not need sentence-transformers installed.
+semantic_model = None
+embedding_mean = None
+whitening_matrix = None
+ontology_vectors = None
+
+
+def load_semantic_model():
+    global semantic_model, embedding_mean, whitening_matrix, ontology_vectors
+
+    if semantic_model is not None:
+        return
+
+    from sentence_transformers import SentenceTransformer
+
+    semantic_model = SentenceTransformer(SEMANTIC_MODEL)
+    semantic_model.eval()   # frozen:used only as a fixed feature extractor
+
+    #DistilBERT similarities are nearly uniform. Whitening fixes this issue (We need to adress it in the report). 
+    cached_vectors = np.array(list(load_cache("Data/embeddings.npz").values()),
+                              dtype=np.float64)
+    embedding_mean = cached_vectors.mean(axis=0, keepdims=True)
+    covariance = np.cov(cached_vectors.T)
+    components, variances, _ = np.linalg.svd(covariance)
+    whitening_matrix = components @ np.diag(1.0 / np.sqrt(variances + 1e-8))
+
+    #encoded once
+    ontology_vectors = {slot: prepare(semantic_model.encode(terms))
+                        for slot, terms in ontology.items()}
 
 
 def prepare(vectors):
@@ -167,16 +188,11 @@ def prepare(vectors):
     return whitened / np.clip(norms, 1e-8, np.inf)
 
 
-ontology = {"area": areas, "food": foods, "pricerange": price_ranges}
-
-#encoded once
-ontology_vectors = {slot: prepare(semantic_model.encode(terms))
-                    for slot, terms in ontology.items()}
-
-
 def semantic_slot_extractor(utterance, threshold=SIMILARITY_THRESHOLD, debug=False):
     #Map the words of utterances to ontology by cosine similarity
     #Matches below the threshold are rejecte
+    load_semantic_model()
+
     words = [word for word in utterance.lower().split()
              if len(word) >= MINIMUM_WORD_LENGTH and word not in GENERIC_WORDS]
 

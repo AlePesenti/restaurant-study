@@ -2,3 +2,10 @@
 __pycache__/
 results/
 .ipynb_checkpoints/
+
+# Web app
+.venv-web/
+logs/webapp/
+# Pre-rendered audio lives in a Hugging Face dataset (webapp/audio_dataset.py), not in git
+webapp/audio_cache/
+.venv-server/
