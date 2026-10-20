@@ -20,7 +20,7 @@
   "min_turns_before_done": 3,
 
   "tasks": [
-    "You would like an expensive Chinese restaurant in the south of town. Find one, then ask for its phone number and its address.",
-    "You would like a moderately priced Indian restaurant in the north of town. Find one, then ask for its phone number and its address."
+    "You would like an expensive Chinese restaurant in the south of town. You have no additional requirements. Find one, then ask for its phone number and its address.",
+    "You would like a moderately priced Indian restaurant in the north of town. You have no additional requirements. Find one, then ask for its phone number and its address."
   ]
 }
