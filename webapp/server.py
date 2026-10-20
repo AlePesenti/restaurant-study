@@ -1,8 +1,10 @@
 """Web app for the TTS perception study.
 
-Each participant talks to the restaurant dialog system four times, once per voice
-condition, in a counterbalanced random order. After each conversation they are sent
-to the Google Form with their participant ID and an opaque condition code prefilled.
+Each participant talks to the restaurant dialog system twice, once with a robotic and
+once with a natural voice of the same gender. The researcher picks the pair and its order
+by sending one of the group links (?g=CODE, see "groups" in study_config.json). After
+each conversation the participant is sent to the Google Form with their participant ID
+and an opaque condition code prefilled.
 
 Run locally from the repository root:
     python -m uvicorn webapp.server:app --port 7860
@@ -11,13 +13,10 @@ Run locally from the repository root:
 import base64
 import hashlib
 import hmac
-import itertools
 import json
 import os
-import random
 import threading
 import uuid
-from collections import Counter
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -41,7 +40,7 @@ os.chdir(ROOT)
 
 CONFIG = json.loads((WEBAPP / "study_config.json").read_text(encoding="utf-8"))
 CONDITIONS = CONFIG["conditions"]
-CODES = list(CONDITIONS)
+GROUPS = CONFIG["groups"]
 FORM_URL = os.environ.get("FORM_URL", CONFIG["form_url"])
 FINAL_FORM_URL = os.environ.get("FINAL_FORM_URL", CONFIG["final_form_url"])
 
@@ -115,60 +114,6 @@ def log_event(event, **fields):
             log.write(json.dumps(record) + "\n")
 
 
-### Counterbalancing ###
-# Each new participant gets, at random, one of the 24 orders that has been used least so
-# far. The counts include every session already in the logs (local files and the log
-# dataset), so the balance survives server restarts. SystemRandom draws from the
-# operating system's entropy, so orders are never repeated in a predictable pattern.
-
-def order_history():
-    """How often each order was assigned, from the session_start events in the logs."""
-    files = list(LOG_DIR.glob("*.jsonl"))
-
-    if os.environ.get("LOG_DATASET") and os.environ.get("HF_TOKEN"):
-        try:
-            from huggingface_hub import snapshot_download
-            remote = snapshot_download(os.environ["LOG_DATASET"], repo_type="dataset",
-                                       allow_patterns="logs/*.jsonl", token=os.environ["HF_TOKEN"])
-            files += list(Path(remote).glob("logs/*.jsonl"))
-        except Exception as error:   # e.g. the dataset does not exist yet
-            print(f"could not read previous logs: {error}")
-
-    counts = Counter()
-    seen = set()
-    for path in files:
-        if path.name in seen:
-            continue
-        seen.add(path.name)
-        for line in path.read_text(encoding="utf-8").splitlines():
-            try:
-                record = json.loads(line)
-            except ValueError:
-                continue
-            if record.get("event") == "session_start" and sorted(record.get("order", [])) == sorted(CODES):
-                counts[tuple(record["order"])] += 1
-    return counts
-
-
-class OrderBalancer:
-    def __init__(self, codes, history):
-        self.orders = [tuple(order) for order in itertools.permutations(codes)]
-        self.counts = Counter({order: history.get(order, 0) for order in self.orders})
-        self.random = random.SystemRandom()
-        self.lock = threading.Lock()
-
-    def next(self):
-        with self.lock:
-            fewest = min(self.counts.values())
-            order = self.random.choice([order for order in self.orders if self.counts[order] == fewest])
-            self.counts[order] += 1
-            return list(order)
-
-
-order_balancer = OrderBalancer(CODES, order_history())
-print(f"order balancing: {sum(order_balancer.counts.values())} previous sessions found")
-
-
 ### Speech ###
 
 speech = SpeechSynthesizer()
@@ -207,7 +152,9 @@ dialogs_lock = threading.Lock()
 def form_link(template, participant_id, code="", position=""):
     if not template:
         return ""
-    return template.format(participant_id=quote(participant_id), code=quote(code), position=position)
+    group = participant_id.split("-")[0]
+    return template.format(participant_id=quote(participant_id), code=quote(code),
+                           position=position, group=quote(group))
 
 
 ### API ###
@@ -223,6 +170,10 @@ app = FastAPI(lifespan=lifespan)
 
 class SessionRequest(BaseModel):
     token: str
+
+
+class NewSessionRequest(BaseModel):
+    group: str
 
 
 class StartRequest(BaseModel):
@@ -242,16 +193,23 @@ def index():
 
 
 @app.get("/api/config")
-def config():
-    return {"conditions": len(CODES), "show_text": CONFIG["show_text"],
-            "min_turns_before_done": CONFIG["min_turns_before_done"]}
+def config(g: str = ""):
+    group = GROUPS.get(g.strip().upper())
+    return {"valid_group": group is not None, "conditions": len(group["order"]) if group else 0,
+            "show_text": CONFIG["show_text"], "min_turns_before_done": CONFIG["min_turns_before_done"]}
 
 
 @app.post("/api/session")
-def new_session():
-    participant_id = uuid.uuid4().hex[:8].upper()
-    order = order_balancer.next()
-    log_event("session_start", participant_id=participant_id, order=order,
+def new_session(request: NewSessionRequest):
+    group = request.group.strip().upper()
+    if group not in GROUPS:
+        raise HTTPException(status_code=400, detail="invalid group")
+
+    # The group code starts the participant ID, so every form response carries it.
+    participant_id = f"{group}-{uuid.uuid4().hex[:6].upper()}"
+    order = GROUPS[group]["order"]
+    log_event("session_start", participant_id=participant_id, group=group,
+              group_label=GROUPS[group]["label"], order=order,
               order_labels=[CONDITIONS[code]["label"] for code in order])
     return {"token": make_token(participant_id, order), "participant_id": participant_id}
 

@@ -58,10 +58,10 @@
 
   <section id="intro-screen" class="card">
     <h1>Restaurant assistants study</h1>
-    <p>In this study you will talk to <strong><span class="n-conditions">four</span> different restaurant assistants</strong>,
+    <p>In this study you will talk to <strong><span class="n-conditions">two</span> different restaurant assistants</strong>,
        one after the other. Each assistant helps you find a restaurant in Cambridge.</p>
     <p>After each conversation you will answer a few short questions about that assistant.
-       The whole study takes about 15 minutes.</p>
+       The whole study takes about 10 minutes.</p>
     <p><strong>Please turn your sound on or use headphones</strong>: the assistants talk.</p>
     <p class="muted">Your answers are anonymous. The conversations are stored for research purposes only.
        You can stop at any time by closing this page.</p>
@@ -115,8 +115,9 @@ const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAE
 
 const $ = (id) => document.getElementById(id);
 const player = new Audio();
-let config = { conditions: 4, show_text: true, min_turns_before_done: 3 };
-let progress = null;     // { token, participant_id, position, stage, form_url }
+let config = { conditions: 2, show_text: true, min_turns_before_done: 3 };
+let progress = null;     // { group, token, participant_id, position, stage, form_url }
+let group = "";          // the study group, from the link (?g=CODE)
 let turns = 0;
 let busy = false;
 
@@ -293,8 +294,8 @@ $("start-button").onclick = async () => {
   player.src = SILENT_WAV;
   player.play().catch(() => {});
   $("start-button").disabled = true;
-  const data = await api("api/session", {});
-  progress = { token: data.token, participant_id: data.participant_id, position: 1, stage: "chat" };
+  const data = await api("api/session", { group });
+  progress = { group, token: data.token, participant_id: data.participant_id, position: 1, stage: "chat" };
   save();
   await startConversation();
 };
@@ -333,19 +334,32 @@ $("final-form-button").onclick = () => {
 // ---- boot ----
 
 (async () => {
-  try { config = await api("api/config"); } catch (e) {}
+  const params = new URLSearchParams(location.search);
+  const linkGroup = (params.get("g") || "").trim().toUpperCase();
+
+  // Opening the page with ?new forgets the stored session (to test as a new participant).
+  if (params.has("new")) {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    history.replaceState(null, "", location.pathname + (linkGroup ? "?g=" + linkGroup : ""));
+  }
+
+  progress = load();
+  // A link for another group (or progress from the old four-voice version) starts a new participant.
+  if (progress && (!progress.group || (linkGroup && progress.group !== linkGroup))) progress = null;
+  group = progress ? progress.group : linkGroup;
+
+  try { config = await api("api/config?g=" + encodeURIComponent(group)); } catch (e) {}
   const words = ["zero", "one", "two", "three", "four", "five", "six"];
   for (const el of document.querySelectorAll(".n-conditions")) {
     el.textContent = words[config.conditions] || String(config.conditions);
   }
 
-  // Opening the page with ?new forgets the stored session (to test as a new participant).
-  if (new URLSearchParams(location.search).has("new")) {
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-    history.replaceState(null, "", location.pathname);
+  if (!progress && config.valid_group === false) {
+    show("intro-screen");
+    $("intro-screen").innerHTML =
+      "<h1>Invalid link</h1><p>This link is not complete. Please use the exact link you received.</p>";
+    return;
   }
-
-  progress = load();
   if (!progress) return show("intro-screen");
 
   // Resume after a reload. An interrupted conversation restarts from the greeting;

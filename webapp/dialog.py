@@ -134,7 +134,9 @@ def transition(dialog_state, utterance, dialog_act):
             return dialog_state, response, act
 
         if current_state in (8, 9) and act in ("negate", "deny"):
-            act = "reqalts"
+            # "no thanks, that's all" ends the conversation; a plain "no" asks for another one.
+            closing = r"\bthat'?s all\b|\bthat is all\b|\bthanks?\b|\bthank you\b|\bbye\b|\bgoodbye\b"
+            act = "bye" if re.search(closing, utterance) else "reqalts"
 
     before = copy.deepcopy(dialog_state)
     dialog_state, response = state_machine.state_transition(dialog_state, utterance, act)

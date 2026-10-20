@@ -1,8 +1,8 @@
 # Restaurant assistants study: web app
 
 A browser front end for the Part 1b dialog system, built for a perception study on
-text-to-speech voices. Every participant talks to the same dialog system four times,
-each time with a different voice:
+text-to-speech voices. Every participant talks to the same dialog system twice: once with
+a robotic and once with a natural voice of the same gender. The four voices:
 
 | Code   | Label          | Engine    | Voice       |
 |--------|----------------|-----------|-------------|
@@ -14,18 +14,34 @@ each time with a different voice:
 All four voices are generated **on the server**, so every participant hears exactly the
 same audio, whatever their device. Both engines are free and open source and run on CPU.
 
+## Groups
+
+The researcher decides which pair (and order) each participant gets by sending one of
+four links, `https://<server>/?g=CODE`:
+
+| Group  | Label                  | Assistant 1          | Assistant 2          |
+|--------|------------------------|----------------------|----------------------|
+| `K4PZ` | robotic-natural-male   | `WDTP` robotic-male  | `DTFL` human-male    |
+| `M8QD` | robotic-natural-female | `CDUK` robotic-female| `9TEF` human-female  |
+| `X2LH` | natural-robotic-male   | `DTFL` human-male    | `WDTP` robotic-male  |
+| `T6VB` | natural-robotic-female | `9TEF` human-female  | `CDUK` robotic-female|
+
+The page without `?g=` (or with an unknown code) says the link is invalid. The participant
+ID starts with the group code (e.g. `K4PZ-A62486`), so every form response carries it;
+`{group}` can also be used as a separate placeholder in `form_url`.
+
 ## Study flow
 
 1. Information and consent page.
-2. The server assigns a participant ID and an order of the four voices. The 24 possible
-   orders are dealt from a shuffled deck, so orders are random but balanced.
-3. For each of the four positions: a conversation with "Assistant N" (with a task to
-   complete), then a button that opens the Google Form with the participant ID and an
-   opaque condition code prefilled. The participant submits it and comes back.
-4. Optional final form (demographics, overall comparison).
+2. The server assigns a participant ID; the order comes from the group in the link.
+3. For each of the two positions: a conversation with "Assistant N" (task 1 for the first
+   assistant, task 2 for the second), then a button that opens the Google Form with the
+   participant ID, an opaque condition code and the assistant number prefilled. The
+   participant submits it and comes back.
+4. Optional final form.
 
-Participants only ever see "Assistant 1-4" and the four-letter codes, never the condition
-names. The code-to-voice mapping is in `study_config.json`.
+Participants only ever see "Assistant 1-2" and the four-letter codes, never the condition
+names. The mappings are in `study_config.json`.
 
 ## Dialog fixes: `webapp/dialog.py`
 
@@ -46,20 +62,21 @@ pip install -r webapp/requirements-server.txt
 python -m uvicorn webapp.server:app --port 7860
 ```
 
-Then open http://localhost:7860. To start again as a new participant, clear the site data
+Then open http://localhost:7860/?g=K4PZ. To start again as a new participant, add `&new`
 (the progress is kept in the browser's localStorage). The server only plays pre-rendered
 audio (see below); `webapp/requirements.txt` adds the TTS engines needed to render it.
 
 ## Configuration: `study_config.json`
 
+- `groups`: group code -> label and order of two condition codes.
 - `conditions`: code -> voice. eSpeak takes `rate` (words per minute), Kokoro takes `speed`.
   Other Kokoro voices: `af_heart`, `am_michael` (American), `bf_isabella`, `bm_lewis` (British).
 - `form_url`: the Google Form prefill link, with `{participant_id}` and `{code}` placeholders
-  (`{position}` is also available). See below.
+  (`{position}` and `{group}` are also available). See below.
 - `final_form_url`: optional final form, with `{participant_id}`.
 - `show_text`: show the system's answers as text as well as audio.
 - `min_turns_before_done`: turns before the "Finish conversation" button is enabled.
-- `tasks`: one task per position (shown in order, independent of the voice).
+- `tasks`: one task per position (the same for everyone, independent of the voice).
 
 `form_url` and `final_form_url` can also be set as environment variables (`FORM_URL`,
 `FINAL_FORM_URL`) in the Space settings.
@@ -73,7 +90,7 @@ audio (see below); `webapp/requirements.txt` adds the TTS engines needed to rend
    `https://docs.google.com/forms/d/e/1FAIpQ.../viewform?usp=pp_url&entry.123456={participant_id}&entry.654321={code}`
 4. Put it in `form_url`.
 
-The same form is filled in four times per participant (one row per assistant), which gives
+The same form is filled in twice per participant (one row per assistant), which gives
 a long-format table ready for a repeated-measures analysis.
 
 ## Audio cache: `webapp/precompute.py`
@@ -102,13 +119,13 @@ hosted server has no TTS engine: a sentence missing from the cache is shown with
 
 ## Logs
 
-Every event (session start with the assigned order, condition start, each turn, condition
+Every event (session start with the group and order, condition start, each turn, condition
 end) is appended as JSON to `logs/webapp/`. The hosting disk is wiped on every restart, so
 when `LOG_DATASET` and `HF_TOKEN` are set the folder is committed every 2 minutes to that
 private Hugging Face dataset (created automatically).
 
 `SECRET_KEY` signs the participants' session tokens, so a restart does not lose their
-condition order.
+group and order.
 
 ## Deploy on Render (free)
 
